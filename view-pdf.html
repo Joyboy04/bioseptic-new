@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View Brosur Display</title>
+    <link 
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" 
+    rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script src="https://cdn.emailjs.com/dist/email.min.js"></script>
+    <style>
+        /* General Body Styling */
+        body {
+            font-family: 'Roboto', Arial, sans-serif;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 0;
+        }
+
+        .pdf-container {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            margin-top: 40px;
+        }
+
+        .pdf-container h2 {
+            font-size: 24px;
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        #pdf-render canvas {
+            display: block;
+            margin: 15px auto;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-download {
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-weight: 500;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            transition: 0.3s;
+            display: block;
+            margin: 20px auto;
+        }
+
+        .btn-download:hover {
+            background-color: #0056b3;
+        }
+
+        /* Modal Styling */
+        .modal {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content {
+            background: #fff;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            max-width: 500px;
+            width: 100%;
+        }
+
+        .modal-content h2 {
+            font-size: 22px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        .modal-content label {
+            font-size: 14px;
+            margin-top: 15px;
+            font-weight: 500;
+            color: #495057;
+        }
+
+        .modal-content input,
+        .modal-content textarea {
+            border: 1px solid #ced4da;
+            border-radius: 5px;
+            padding: 10px;
+            width: 100%;
+            font-size: 14px;
+        }
+
+        .modal-content input:focus,
+        .modal-content textarea:focus {
+            outline: none;
+            border-color: #80bdff;
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+        }
+
+        .btn-submit {
+            background-color: #28a745;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-weight: 500;
+            letter-spacing: 1px;
+            margin-top: 20px;
+            width: 100%;
+        }
+
+        .btn-submit:hover {
+            background-color: #218838;
+        }
+
+        .close {
+            font-size: 20px;
+            color: #6c757d;
+            cursor: pointer;
+            position: absolute;
+            top: 15px;
+            right: 20px;
+        }
+
+        .close:hover {
+            color: #343a40;
+        }
+
+        /* Media Queries for Responsiveness */
+        @media (max-width: 768px) {
+            .pdf-container {
+                margin-top: 20px;
+                padding: 15px;
+            }
+
+            .modal-content {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- PDF Viewer Container -->
+    <div class="pdf-container" id="pdf-container">
+        <h2>PDF Viewer</h2>
+        <div id="pdf-render"></div>
+        <button id="btn-download" class="btn-download">Download PDF</button>
+    </div>
+
+    <!-- Modal Form -->
+    <div id="form-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Isi Form untuk Mendownload PDF</h2>
+            <form id="download-form">
+                <label for="name">Nama:</label>
+                <input type="text" id="name" name="name" required>
+
+                <label for="email">Email:</label>
+                <input type="email" id="email" name="email" required>
+
+                <label for="company">Perusahaan:</label>
+                <input type="text" id="company" name="company" required>
+
+                <label for="reason">Alasan Mendownload:</label>
+                <textarea id="reason" name="reason" required></textarea>
+
+                <button type="submit" class="btn-submit">Kirim dan Download</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+   // Initialize Email.js
+   (function () {
+        emailjs.init("VS9YuBAmx1lxQFypn"); // Replace with your actual Public Key
+    })();
+
+    // Fix for PDF.js
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const modal = document.getElementById('form-modal');
+        const closeModal = document.querySelector('.close');
+        const form = document.getElementById('download-form');
+        const downloadButton = document.getElementById('btn-download');
+
+        // Dynamically determine the PDF file path from URL query parameters
+        const pdfFilePath = `pdf/${new URLSearchParams(window.location.search).get('file')}`;
+
+        // Show modal when the download button is clicked
+        downloadButton.addEventListener('click', (event) => {
+            event.preventDefault();
+            modal.style.display = 'flex';
+        });
+
+        // Close modal when the close button is clicked
+        closeModal.addEventListener('click', () => {
+            modal.style.display = 'none';
+        });
+
+        // Close modal when clicking outside of it
+        window.onclick = (event) => {
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        };
+
+        // Form submission logic
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData.entries());
+
+            try {
+                // Send form data using Email.js
+                await emailjs.send("service_5pc96zj", "template_6mixj7w", {
+                    name: data.name,
+                    email: data.email,
+                    company: data.company,
+                    reason: data.reason, // Include this if the form has a reason field
+                });
+
+                alert('Form berhasil dikirim. PDF akan segera terdownload.');
+
+                // Automatically download the PDF after form submission
+                const link = document.createElement('a');
+                link.href = pdfFilePath;
+                link.download = pdfFilePath.split('/').pop();
+                link.click();
+
+                // Close the modal
+                modal.style.display = 'none';
+            } catch (error) {
+                console.error('Error sending form:', error);
+                alert('Terjadi kesalahan saat mengirim form. Silakan coba lagi.');
+            }
+        });
+    });
+
+        // Get file parameter from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const fileParam = urlParams.get('file');
+
+        if (!fileParam) {
+            alert('No PDF file specified.');
+            document.body.innerHTML = '<h1>No PDF file specified.</h1>';
+            throw new Error('No PDF file specified.');
+        }
+
+        const pdfFilePath = `pdf/${fileParam}`; // Folder PDF Anda
+        const pdfContainer = document.getElementById('pdf-render');
+
+        // Load PDF and Render as Images
+        const renderPDF = async (url) => {
+            try {
+                const pdf = await pdfjsLib.getDocument(url).promise;
+
+                for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
+                    const page = await pdf.getPage(pageNumber);
+
+                    const viewport = page.getViewport({ scale: 1.5 });
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
+
+                    canvas.width = viewport.width;
+                    canvas.height = viewport.height;
+
+                    // Render Page into Canvas
+                    await page.render({
+                        canvasContext: context,
+                        viewport: viewport,
+                    }).promise;
+
+                    // Append Canvas to Container
+                    pdfContainer.appendChild(canvas);
+                }
+            } catch (error) {
+                alert('Failed to load PDF.');
+                console.error(error);
+            }
+        };
+
+        // Disable Print and Save
+        document.addEventListener('keydown', (event) => {
+            if (event.ctrlKey && (event.key === 'p' || event.key === 's')) {
+                alert('Printing and saving are disabled.');
+                event.preventDefault();
+                return false;
+            }
+        });
+
+        document.addEventListener('contextmenu', (event) => {
+            event.preventDefault();
+        });
+
+        // Load and Render the PDF
+        renderPDF(pdfFilePath);
+    </script>
+<script src="https://cdn.emailjs.com/dist/email.min.js"></script>
+
+</body>
+</html>
