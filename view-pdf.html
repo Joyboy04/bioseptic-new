@@ -9,6 +9,7 @@
     rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     <script src="https://cdn.emailjs.com/dist/email.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js"></script>
     <style>
         /* General Body Styling */
         body {
@@ -179,133 +180,146 @@
     </div>
 
     <script>
-   // Initialize Email.js
-   (function () {
-        emailjs.init("VS9YuBAmx1lxQFypn"); // Replace with your actual Public Key
-    })();
-
-    // Fix for PDF.js
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
-
-    document.addEventListener('DOMContentLoaded', () => {
-        const modal = document.getElementById('form-modal');
-        const closeModal = document.querySelector('.close');
-        const form = document.getElementById('download-form');
-        const downloadButton = document.getElementById('btn-download');
-
-        // Dynamically determine the PDF file path from URL query parameters
-        const pdfFilePath = `pdf/${new URLSearchParams(window.location.search).get('file')}`;
-
-        // Show modal when the download button is clicked
-        downloadButton.addEventListener('click', (event) => {
+        document.addEventListener('DOMContentLoaded', () => {
+          emailjs.init("VS9YuBAmx1lxQFypn"); // Replace with your actual Public Key
+      
+          // Fix for PDF.js
+          pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+      
+          // DOM elements
+          const modal = document.getElementById('form-modal');
+          const closeModal = document.querySelector('.close');
+          const form = document.getElementById('download-form');
+          const downloadButton = document.getElementById('btn-download');
+          const submitButton = document.querySelector('.submitBtn');
+      
+          const nameInput = document.getElementById("name");
+          const emailInput = document.getElementById("email");
+          const companyInput = document.getElementById("company");
+          const reasonInput = document.getElementById("reason");
+      
+          // Dynamically determine the PDF file path from URL query parameters
+          const pdfFilePath = `pdf/${new URLSearchParams(window.location.search).get('file')}`;
+      
+          // Show modal when the download button is clicked
+          downloadButton.addEventListener('click', (event) => {
             event.preventDefault();
             modal.style.display = 'flex';
-        });
-
-        // Close modal when the close button is clicked
-        closeModal.addEventListener('click', () => {
+          });
+      
+          // Close modal when the close button is clicked
+          closeModal.addEventListener('click', () => {
             modal.style.display = 'none';
-        });
-
-        // Close modal when clicking outside of it
-        window.onclick = (event) => {
+          });
+      
+          // Close modal when clicking outside of it
+          window.onclick = (event) => {
             if (event.target === modal) {
-                modal.style.display = 'none';
+              modal.style.display = 'none';
             }
-        };
-
-        // Form submission logic
-        form.addEventListener('submit', async (event) => {
+          }
+      
+          // Enable/Disable Submit Button Based on Form Validation
+          function validateForm() {
+            if (nameInput.value && emailInput.value && companyInput.value) {
+              submitButton.disabled = false;
+            } else {
+              submitButton.disabled = true;
+            }
+          }
+      
+          nameInput.addEventListener("input", validateForm);
+          emailInput.addEventListener("input", validateForm);
+          companyInput.addEventListener("input", validateForm);
+          reasonInput.addEventListener("input", validateForm);
+      
+          // Form Submission Logic
+          form.addEventListener('submit', async (event) => {
             event.preventDefault();
-
-            const formData = new FormData(form);
-            const data = Object.fromEntries(formData.entries());
-
+      
             try {
-                // Send form data using Email.js
-                await emailjs.send("service_5pc96zj", "template_6mixj7w", {
-                    name: data.name,
-                    email: data.email,
-                    company: data.company,
-                    reason: data.reason, // Include this if the form has a reason field
-                });
-
-                alert('Form berhasil dikirim. PDF akan segera terdownload.');
-
-                // Automatically download the PDF after form submission
-                const link = document.createElement('a');
-                link.href = pdfFilePath;
-                link.download = pdfFilePath.split('/').pop();
-                link.click();
-
-                // Close the modal
-                modal.style.display = 'none';
+              // Use Email.js to send form data
+              await emailjs.sendForm('service_5pc96zj', 'template_6mixj7w', form);
+      
+              alert('Form berhasil dikirim. PDF akan segera terdownload.');
+      
+              // Automatically download the PDF after form submission
+              const link = document.createElement('a');
+              link.href = pdfFilePath;
+              link.download = pdfFilePath.split('/').pop();
+              link.click();
+      
+              // Reset the form and disable the submit button
+              form.reset();
+              submitButton.disabled = true;
+      
+              // Close the modal
+              modal.style.display = 'none';
             } catch (error) {
-                console.error('Error sending form:', error);
-                alert('Terjadi kesalahan saat mengirim form. Silakan coba lagi.');
+              console.error('Error sending form:', error);
+              alert('Terjadi kesalahan saat mengirim form. Silakan coba lagi.');
             }
-        });
-    });
-
-        // Get file parameter from URL
-        const urlParams = new URLSearchParams(window.location.search);
-        const fileParam = urlParams.get('file');
-
-        if (!fileParam) {
+          });
+      
+          // Get file parameter from URL
+          const urlParams = new URLSearchParams(window.location.search);
+          const fileParam = urlParams.get('file');
+      
+          if (!fileParam) {
             alert('No PDF file specified.');
             document.body.innerHTML = '<h1>No PDF file specified.</h1>';
             throw new Error('No PDF file specified.');
-        }
-
-        const pdfFilePath = `pdf/${fileParam}`; // Folder PDF Anda
-        const pdfContainer = document.getElementById('pdf-render');
-
-        // Load PDF and Render as Images
-        const renderPDF = async (url) => {
+          }
+      
+          const pdfContainer = document.getElementById('pdf-render');
+      
+          // Load and Render PDF as Images
+          const renderPDF = async (url) => {
             try {
-                const pdf = await pdfjsLib.getDocument(url).promise;
-
-                for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
-                    const page = await pdf.getPage(pageNumber);
-
-                    const viewport = page.getViewport({ scale: 1.5 });
-                    const canvas = document.createElement('canvas');
-                    const context = canvas.getContext('2d');
-
-                    canvas.width = viewport.width;
-                    canvas.height = viewport.height;
-
-                    // Render Page into Canvas
-                    await page.render({
-                        canvasContext: context,
-                        viewport: viewport,
-                    }).promise;
-
-                    // Append Canvas to Container
-                    pdfContainer.appendChild(canvas);
-                }
+              const pdf = await pdfjsLib.getDocument(url).promise;
+      
+              for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
+                const page = await pdf.getPage(pageNumber);
+      
+                const viewport = page.getViewport({ scale: 1.5 });
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+      
+                canvas.width = viewport.width;
+                canvas.height = viewport.height;
+      
+                // Render Page into Canvas
+                await page.render({
+                  canvasContext: context,
+                  viewport: viewport,
+                }).promise;
+      
+                // Append Canvas to Container
+                pdfContainer.appendChild(canvas);
+              }
             } catch (error) {
-                alert('Failed to load PDF.');
-                console.error(error);
+              alert('Failed to load PDF.');
+              console.error(error);
             }
-        };
-
-        // Disable Print and Save
-        document.addEventListener('keydown', (event) => {
+          };
+      
+          // Disable Print and Save
+          document.addEventListener('keydown', (event) => {
             if (event.ctrlKey && (event.key === 'p' || event.key === 's')) {
-                alert('Printing and saving are disabled.');
-                event.preventDefault();
-                return false;
+              alert('Printing and saving are disabled.');
+              event.preventDefault();
+              return false;
             }
-        });
-
-        document.addEventListener('contextmenu', (event) => {
+          });
+      
+          document.addEventListener('contextmenu', (event) => {
             event.preventDefault();
+          });
+      
+          // Load and Render the PDF
+          renderPDF(pdfFilePath);
         });
-
-        // Load and Render the PDF
-        renderPDF(pdfFilePath);
-    </script>
+      </script>
 <script src="https://cdn.emailjs.com/dist/email.min.js"></script>
 
 </body>
