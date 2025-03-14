@@ -2225,20 +2225,15 @@ a:focus {
     transform: scale(1.1); /* Zoom effect */
 }
 
-/* Carousel Container Styling */
+/* General Carousel Container Styling */
 .video-carousel {
-    max-width: 800px; /* Adjust width to your preference */
-    margin: 20px auto; /* Center the carousel */
-    background-color: #f8f9fa; /* Light background for contrast */
+    width: 800px; /* Set a fixed width to match desktop */
+    max-width: 800px; /* Ensures uniformity across devices */
+    margin: 20px auto;
+    background-color: transparent;
     border-radius: 10px;
     overflow: hidden;
-    padding: 10px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-.video-carousel .video-container {
-    position: relative;
-    padding-top: 56.25%; /* 16:9 aspect ratio */
 }
 
 .video-carousel iframe {
@@ -2253,12 +2248,13 @@ a:focus {
 
 /* Modal Container Styling */
 .custom-video-modal .modal-dialog {
+    width: 800px; /* Ensure it maintains desktop size */
     max-width: 800px;
     margin: 1.75rem auto;
 }
 
 .custom-video-modal .modal-content {
-    background-color: #000; /* Black background for the modal */
+    background-color: #000;
     border-radius: 10px;
     overflow: hidden;
     border: none;
@@ -2292,11 +2288,18 @@ a:focus {
     border: none;
 }
 
-/* Responsive Design */
+/* Ensure uniform sizing across all devices */
 @media (max-width: 768px) {
     .video-carousel,
     .custom-video-modal .modal-dialog {
-        max-width: 100%;
-        margin: 0 10px;
+        width: 350px; /* Forces mobile to match desktop width */
+        max-width: 800px;
+        height: 180px;
+        margin: 20px auto;
+    }
+    
+    body {
+        overflow-x: auto; /* Prevents horizontal scrolling issues */
     }
 }
+
